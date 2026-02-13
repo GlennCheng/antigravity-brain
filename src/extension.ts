@@ -172,9 +172,32 @@ export function activate(context: vscode.ExtensionContext) {
 
     // 6. Locate in Tree Command — highlight current file in sidebar
     let locateDisposable = vscode.commands.registerCommand('antigravity-brain.locateInTree', async () => {
+        let filePath: string | undefined;
+
+        // Try 1: active text editor
         const activeEditor = vscode.window.activeTextEditor;
         if (activeEditor) {
-            await revealFileInTree(activeEditor.document.uri.fsPath);
+            filePath = activeEditor.document.uri.fsPath;
+        }
+
+        // Try 2: active tab (works for custom editors, webviews, etc.)
+        if (!filePath && vscode.window.tabGroups) {
+            const activeTab = vscode.window.tabGroups.activeTabGroup?.activeTab;
+            if (activeTab?.input) {
+                const input = activeTab.input as any;
+                // TabInputText, TabInputCustom, TabInputNotebook all have .uri
+                if (input.uri) {
+                    filePath = input.uri.fsPath;
+                }
+                // TabInputTextDiff has .modified
+                else if (input.modified) {
+                    filePath = input.modified.fsPath;
+                }
+            }
+        }
+
+        if (filePath) {
+            await revealFileInTree(filePath);
         } else {
             vscode.window.showInformationMessage('No active file to locate.');
         }

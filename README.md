@@ -240,6 +240,8 @@ Press **F5** in VS Code to launch the Extension Development Host for testing.
 
 This project is licensed under the **MIT License** — see the [LICENSE](LICENSE) file for details.
 
+Copyright © 2025 Glenn Cheng. All rights reserved.
+
 ---
 
 ## 💬 FAQ
@@ -255,6 +257,19 @@ A: Yes! Set `antigravity.brainPath` in your VS Code settings to point to any dir
 
 ---
 
+## ✍️ Author & Credit
+
+| | |
+|---|---|
+| **Original Author** | [Glenn Cheng](https://github.com/GlennCheng) |
+| **Created** | February 2025 |
+| **Canonical Repo** | [github.com/GlennCheng/antigravity-brain](https://github.com/GlennCheng/antigravity-brain) |
+
+> ⚠️ This is the **original and canonical repository**. If you find this project published elsewhere, please verify it links back here. Unauthorized republishing without attribution violates the MIT License terms.
+
+---
+
 <p align="center">
   Made with 🧠 by <a href="https://github.com/GlennCheng">Glenn Cheng</a>
 </p>
+

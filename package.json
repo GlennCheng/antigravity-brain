@@ -4,6 +4,19 @@
   "description": "Transform your Markdown files & tasks into an interactive Mind Map. A Force-Directed Graph extension for VS Code.",
   "version": "0.0.1",
   "publisher": "antigravity",
+  "author": {
+    "name": "Glenn Cheng",
+    "url": "https://github.com/GlennCheng"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/GlennCheng/antigravity-brain.git"
+  },
+  "homepage": "https://github.com/GlennCheng/antigravity-brain#readme",
+  "bugs": {
+    "url": "https://github.com/GlennCheng/antigravity-brain/issues"
+  },
   "engines": {
     "vscode": "^1.78.0"
   },
