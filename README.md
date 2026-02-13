@@ -244,6 +244,13 @@ Copyright © 2025 Glenn Cheng. All rights reserved.
 
 ---
 
+## ⚖️ Disclaimer
+
+This extension is provided "as is", without warranty of any kind, express or implied. The author (Glenn Cheng) is not responsible for any damages, data loss, or issues arising from the use of this software.  
+While we strive for stability and security, please use it at your own risk. Always back up your important data.
+
+---
+
 ## 💬 FAQ
 
 **Q: Does this extension read or send my data to any server?**

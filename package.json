@@ -17,6 +17,7 @@
   "bugs": {
     "url": "https://github.com/GlennCheng/antigravity-brain/issues"
   },
+
   "engines": {
     "vscode": "^1.78.0"
   },
