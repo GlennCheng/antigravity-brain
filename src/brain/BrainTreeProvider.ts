@@ -3,14 +3,28 @@ import * as path from 'path';
 import * as fs from 'fs';
 import { BrainManager } from './BrainManager';
 import { BrainNode } from './types';
+import { parseFrontmatter } from './FrontmatterUtils';
 
 export class BrainTreeProvider implements vscode.TreeDataProvider<BrainNode> {
     private _onDidChangeTreeData: vscode.EventEmitter<BrainNode | undefined | null | void> = new vscode.EventEmitter<BrainNode | undefined | null | void>();
     readonly onDidChangeTreeData: vscode.Event<BrainNode | undefined | null | void> = this._onDidChangeTreeData.event;
 
+    // Cache for directory nodes so getParent returns the same object reference as getChildren
+    private directoryNodeCache = new Map<string, BrainNode>();
+
+    // Active tag filter (undefined = show all)
+    public activeTagFilter: string | undefined = undefined;
+
     constructor(private brainManager: BrainManager) {}
 
     refresh(): void {
+        this.directoryNodeCache.clear(); // Clear cache on refresh
+        this._onDidChangeTreeData.fire();
+    }
+
+    setTagFilter(tag: string | undefined): void {
+        this.activeTagFilter = tag;
+        this.directoryNodeCache.clear();
         this._onDidChangeTreeData.fire();
     }
 
@@ -81,12 +95,13 @@ export class BrainTreeProvider implements vscode.TreeDataProvider<BrainNode> {
              treeItem.collapsibleState = vscode.TreeItemCollapsibleState.None;
         } else {
              // For directories (Brain Tasks)
-             treeItem.iconPath = new vscode.ThemeIcon('project');
-             treeItem.contextValue = 'brainTask';
+             const isPinned = element.metadata?.pinned === true;
+             treeItem.iconPath = new vscode.ThemeIcon(isPinned ? 'pin' : 'project');
+             treeItem.contextValue = isPinned ? 'brainTaskPinned' : 'brainTask';
              // Tooltip shows the UUID/Path
              treeItem.tooltip = element.path;
              
-             // Description order: file count → time → brain ID
+             // Description order: file count → time → brain ID → tags
              const parts: string[] = [];
              
              // File count
@@ -102,6 +117,11 @@ export class BrainTreeProvider implements vscode.TreeDataProvider<BrainNode> {
              
              // Brain ID (folder basename)
              parts.push(path.basename(element.path));
+
+             // Tags
+             if (element.metadata?.tags && element.metadata.tags.length > 0) {
+                 parts.push(`[${element.metadata.tags.join(', ')}]`);
+             }
              
              treeItem.description = parts.join(' • ');
         }
@@ -134,9 +154,16 @@ export class BrainTreeProvider implements vscode.TreeDataProvider<BrainNode> {
                     if (!taskFolders.has(folderName)) {
                         // Try to find a human readable name from task.md inside this folder
                         let displayName = folderName;
+                        let pinnedStatus = false;
+                        let tagsValue: string[] = [];
                         try {
                             const taskMdPath = path.join(folderPath, 'task.md');
                             if (fs.existsSync(taskMdPath)) {
+                                // Parse frontmatter for pinned/tags
+                                const fm = parseFrontmatter(taskMdPath);
+                                pinnedStatus = fm.pinned === true;
+                                tagsValue = fm.tags || [];
+
                                 const content = fs.readFileSync(taskMdPath, 'utf8');
                                 const lines = content.split('\n');
                                 let inFrontmatter = false;
@@ -165,19 +192,22 @@ export class BrainTreeProvider implements vscode.TreeDataProvider<BrainNode> {
                             // Ignore read errors
                         }
 
-                        taskFolders.set(folderName, {
+                        const newNode: BrainNode = {
                             id: folderPath,
                             path: folderPath,
                             name: displayName,
                             type: 'directory',
-                            metadata: { lastUpdated: 0, fileCount: 0 } // Initialize lastUpdated and fileCount
-                        });
+                            metadata: { lastUpdated: 0, fileCount: 0, pinned: pinnedStatus, tags: tagsValue }
+                        };
+                        taskFolders.set(folderName, newNode);
+                        // Store in cache so getParent returns the exact same object reference
+                        this.directoryNodeCache.set(folderPath, newNode);
                     }
                     
                     // Update folder's lastUpdated time and file count
                     if (taskFolders.has(folderName)) {
                         const folderNode = taskFolders.get(folderName);
-                        if (folderNode) {
+                        if (folderNode && folderNode.metadata) {
                             // Count this file (non-history)
                             folderNode.metadata.fileCount = (folderNode.metadata.fileCount || 0) + 1;
                             
@@ -196,10 +226,13 @@ export class BrainTreeProvider implements vscode.TreeDataProvider<BrainNode> {
             });
 
             const folders = Array.from(taskFolders.values()).sort((a, b) => {
-                 // Sort folders by lastUpdated desc, then name
+                 // Sort folders: Pinned first → then lastUpdated desc → then name
+                 const aPinned = a.metadata?.pinned === true ? 1 : 0;
+                 const bPinned = b.metadata?.pinned === true ? 1 : 0;
+                 if (aPinned !== bPinned) { return bPinned - aPinned; }
                  const timeA = a.metadata?.lastUpdated || 0;
                  const timeB = b.metadata?.lastUpdated || 0;
-                 if (timeA !== timeB) return timeB - timeA;
+                 if (timeA !== timeB) { return timeB - timeA; }
                  return a.name.localeCompare(b.name);
             });
             
@@ -211,15 +244,29 @@ export class BrainTreeProvider implements vscode.TreeDataProvider<BrainNode> {
                  return a.name.localeCompare(b.name);
             });
 
+            // Apply tag filter if active
+            let filteredFolders = folders;
+            const activeFilter = this.activeTagFilter;
+            if (activeFilter) {
+                filteredFolders = folders.filter(f =>
+                    (f.metadata?.tags || []).includes(activeFilter)
+                );
+            }
+
             // Add summary header node at the top
+            const totalShown = filteredFolders.length;
+            const totalAll = folders.length;
+            const filterLabel = activeFilter
+                ? ` (🏷️ ${activeFilter}: ${totalShown}/${totalAll})`
+                : '';
             const summaryNode: BrainNode = {
                 id: '__brain_summary__',
                 path: '',
-                name: `🧠 ${folders.length} Brains`,
+                name: `🧠 ${folders.length} Brains${filterLabel}`,
                 type: 'summary',
             };
 
-            return [summaryNode, ...folders, ...rootFiles];
+            return [summaryNode, ...filteredFolders, ...rootFiles];
         } else if (element.type === 'directory') {
             // Directory: Return files inside this directory
              return graph.nodes.filter(node => {
@@ -245,7 +292,7 @@ export class BrainTreeProvider implements vscode.TreeDataProvider<BrainNode> {
             return undefined; // Top-level items have no parent
         }
 
-        // For files, derive the parent directory node
+        // For files, derive the parent directory path
         let rootPath = this.brainManager.rootPath;
         if (rootPath.startsWith('~')) {
             rootPath = path.join(process.env.HOME || process.env.USERPROFILE || '', rootPath.slice(1));
@@ -255,11 +302,16 @@ export class BrainTreeProvider implements vscode.TreeDataProvider<BrainNode> {
         const segments = relativePath.split(path.sep);
 
         if (segments.length > 1) {
-            const folderName = segments[0];
-            const folderPath = path.join(rootPath, folderName);
+            const folderPath = path.join(rootPath, segments[0]);
 
-            // Try to get display name from task.md
-            let displayName = folderName;
+            // Return the SAME object reference from cache (required for treeView.reveal() to work)
+            const cached = this.directoryNodeCache.get(folderPath);
+            if (cached) {
+                return cached;
+            }
+
+            // Fallback: construct a node if cache miss (e.g. first call before getChildren)
+            let displayName = segments[0];
             try {
                 const taskMdPath = path.join(folderPath, 'task.md');
                 if (fs.existsSync(taskMdPath)) {
@@ -275,13 +327,15 @@ export class BrainTreeProvider implements vscode.TreeDataProvider<BrainNode> {
                 }
             } catch (_) {}
 
-            return {
+            const fallbackNode: BrainNode = {
                 id: folderPath,
                 path: folderPath,
                 name: displayName,
                 type: 'directory',
                 metadata: {}
             };
+            this.directoryNodeCache.set(folderPath, fallbackNode);
+            return fallbackNode;
         }
 
         return undefined;
