@@ -1,4 +1,13 @@
 
+export interface BrainNodeMetadata {
+    updatedAt?: string;       // ISO date string
+    lastUpdated?: number;     // Timestamp (ms)
+    fileCount?: number;
+    pinned?: boolean;         // true if brain is pinned to the top
+    tags?: string[];          // List of user-defined tags
+    [key: string]: any;       // Allow extra fields from .metadata.json
+}
+
 export interface BrainNode {
     id: string; // Absolute path or unique ID
     path: string;
@@ -6,7 +15,7 @@ export interface BrainNode {
     content?: string; // Optional content for parsing
     type: 'file' | 'directory' | 'summary';
     resolvedVersions?: string[]; // Paths to .resolved versions
-    metadata?: any; // Content of .metadata.json
+    metadata?: BrainNodeMetadata;
 }
 
 export interface BrainLink {

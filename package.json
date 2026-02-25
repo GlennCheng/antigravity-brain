@@ -57,6 +57,26 @@
         "command": "antigravity-brain.locateInTree",
         "title": "Antigravity Brain: Locate File in Tree",
         "icon": "$(target)"
+      },
+      {
+        "command": "antigravity-brain.pinBrain",
+        "title": "Pin Brain",
+        "icon": "$(pin)"
+      },
+      {
+        "command": "antigravity-brain.unpinBrain",
+        "title": "Unpin Brain",
+        "icon": "$(pinned)"
+      },
+      {
+        "command": "antigravity-brain.manageTags",
+        "title": "Manage Tags...",
+        "icon": "$(tag)"
+      },
+      {
+        "command": "antigravity-brain.filterByTag",
+        "title": "Antigravity Brain: Filter by Tag",
+        "icon": "$(tag)"
       }
     ],
     "viewsContainers": {
@@ -84,19 +104,24 @@
           "group": "navigation@0"
         },
         {
-          "command": "antigravity-brain.searchBrains",
+          "command": "antigravity-brain.filterByTag",
           "when": "view == antigravity-files",
           "group": "navigation@1"
         },
         {
-          "command": "antigravity-brain.recentActivity",
+          "command": "antigravity-brain.searchBrains",
           "when": "view == antigravity-files",
           "group": "navigation@2"
         },
         {
-          "command": "antigravity-brain.refreshTree",
+          "command": "antigravity-brain.recentActivity",
           "when": "view == antigravity-files",
           "group": "navigation@3"
+        },
+        {
+          "command": "antigravity-brain.refreshTree",
+          "when": "view == antigravity-files",
+          "group": "navigation@4"
         }
       ],
       "view/item/context": [
@@ -104,6 +129,21 @@
           "command": "antigravity-brain.viewHistory",
           "when": "view == antigravity-files && viewItem == fileWithHistory",
           "group": "inline"
+        },
+        {
+          "command": "antigravity-brain.pinBrain",
+          "when": "view == antigravity-files && viewItem == brainTask",
+          "group": "1_brainActions@1"
+        },
+        {
+          "command": "antigravity-brain.unpinBrain",
+          "when": "view == antigravity-files && viewItem == brainTaskPinned",
+          "group": "1_brainActions@1"
+        },
+        {
+          "command": "antigravity-brain.manageTags",
+          "when": "view == antigravity-files && (viewItem == brainTask || viewItem == brainTaskPinned)",
+          "group": "1_brainActions@2"
         }
       ]
     }
